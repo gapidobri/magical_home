@@ -19,11 +19,9 @@ class _NavigationState extends State<Navigation> {
   
   void selectDevice(Light _device) async {
     Navigation.selectedDevice = _device;
+    // ignore: await_only_futures
     await Navigation.selectedDevice.connect();
-    setState(() {
-      print(Navigation.selectedDevice);
-    });
-    
+    setState(() {});
   }
 
   @override

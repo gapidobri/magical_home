@@ -1,4 +1,4 @@
-package com.example.magical_home
+package com.gportals.magical_home
 
 import io.flutter.embedding.android.FlutterActivity
 
