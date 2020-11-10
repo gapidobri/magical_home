@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:magic_home/magic_home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../navigation.dart';
+
 class Home extends StatefulWidget {
 
   Home({
@@ -25,13 +27,22 @@ class _HomeState extends State < Home > {
   }
 
   Future loadDevices() async {
-    List < Light > _devices = await Light.discover();
     storage = await SharedPreferences.getInstance();
-    setState(() {
-      devices = _devices;
-    });
 
-    if (devices.length != 0) widget.deviceSelected(devices[0]);
+    if (storage.containsKey('devices')) {
+      List < String > deviceIPCache = storage.getStringList('devices');
+      setState(() {
+        devices = deviceIPCache.map((ip) => Light(ip)).toList();
+      });
+    }
+
+    List < Light > discDevices = await Light.discover();
+    if (discDevices.length != 0) {
+      storage.setStringList('devices', discDevices.map((device) => device.address).toList());
+      setState(() {
+        devices = discDevices;
+      });
+    }
   }
 
   @override
@@ -47,65 +58,68 @@ class _HomeState extends State < Home > {
           itemCount: devices.length,
           itemBuilder: (context, index) {
             Light device = devices[index];
-            return Card(
-              margin: EdgeInsets.all(15.0),
-              child: Padding(
-                padding: EdgeInsets.all(15.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline,
-                          size: 30.0,
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          storage.getString(device.address) ?? "LED Strip",
-                          style : TextStyle(
-                            fontSize: 24.0
+            return GestureDetector(
+              onTap: () => widget.deviceSelected(device),
+              child: Card(
+                margin: EdgeInsets.all(15.0),
+                child: Padding(
+                  padding: EdgeInsets.all(15.0),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.lightbulb_outline,
+                            size: 30.0,
                           ),
-                        ),
-                        Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                TextEditingController _renameController = TextEditingController(
-                                  text: storage.getString(device.address) ?? "LED Strip"
-                                );
+                          SizedBox(width: 10),
+                          Text(
+                            storage.getString(device.address) ?? "LED Strip",
+                            style : TextStyle(
+                              fontSize: 24.0,
+                            ),
+                          ),
+                          Spacer(),
+                          GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  TextEditingController _renameController = TextEditingController(
+                                    text: storage.getString(device.address) ?? "LED Strip"
+                                  );
 
-                                return AlertDialog(
-                                  title: Text("Rename"),
-                                  content: TextField(
-                                    controller: _renameController,
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      child: Text("Cancel"),
-                                      onPressed: () => Navigator.pop(context),
+                                  return AlertDialog(
+                                    title: Text("Rename the Light"),
+                                    content: TextField(
+                                      controller: _renameController,
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        setState(() {
-                                          storage.setString(device.address, _renameController.text);
-                                        });
-                                      },
-                                      child: Text("Rename"),
-                                    ),
-                                  ],
-                                );
-                              }
-                            );
-                          },
-                          child: Icon(Icons.edit),
-                        ),
+                                    actions: [
+                                      TextButton(
+                                        child: Text("Cancel"),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          setState(() {
+                                            storage.setString(device.address, _renameController.text);
+                                          });
+                                        },
+                                        child: Text("Rename"),
+                                      ),
+                                    ],
+                                  );
+                                }
+                              );
+                            },
+                            child: Icon(Icons.edit),
+                          ),
 
-                      ]
-                    ),
-                  ],
+                        ]
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
